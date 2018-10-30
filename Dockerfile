@@ -1,23 +1,23 @@
-FROM golang AS build-env
+FROM golang AS builder
 
-WORKDIR /src
+RUN mkdir /src
 
 COPY go.mod go.sum /src/
 
+WORKDIR /src
+
 RUN go mod download
 
-COPY . /src
+COPY . /src/
 
-RUN go build -v -o servirus
+RUN CGO_ENABLED=0 GOOS=linux go build -o servirus
 
 FROM alpine
 
-WORKDIR /app
+RUN mkdir /src
 
-COPY --from=build-env /src/servirus /app/
+COPY --from=builder /src/servirus /src/
 
-RUN chmod +x ./servirus && chown root:root ./servirus
-
-CMD ["./servirus"]
+CMD ["/src/servirus"]
 
 EXPOSE 50051
