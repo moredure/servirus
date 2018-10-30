@@ -29,7 +29,7 @@ func (cs *chatumServer) Communicate(srv chatum.Chatum_CommunicateServer) error {
 	cs.bus.Add(username, sid, srv)
 	defer cs.bus.Remove(username, sid)
 	var wg errgroup.Group
-	pinger := time.NewTicker(230 * time.Second)
+	pinger := time.NewTicker(PingPongInterval)
 	defer pinger.Stop()
 	ponger := make(chan bool, 1)
 	defer close(ponger)
@@ -63,13 +63,12 @@ func (cs *chatumServer) Communicate(srv chatum.Chatum_CommunicateServer) error {
 		for {
 			<-pinger.C
 			srv.Send(&chatum.ServerSideEvent{
-				Type: 1,
+				Type: chatum.EventType_PING,
 			})
 			select {
-			case <-time.After(30 * time.Second):
+			case <-time.After(PingPongTimeout):
 				return errors.New("health check failed")
 			case <-ponger:
-				continue
 			}
 		}
 	})
@@ -78,8 +77,8 @@ func (cs *chatumServer) Communicate(srv chatum.Chatum_CommunicateServer) error {
 
 func ExtractUsernameFromContext(ctx context.Context) (string, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok || len(md["username"]) == 0 {
+	if !ok || len(md[UsernameField]) == 0 {
 		return "", UsernameMissingErr
 	}
-	return md["username"][0], nil
+	return md[UsernameField][0], nil
 }
