@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"io"
 	"time"
+	"fmt"
 )
 
 type chatumServer struct {
@@ -33,10 +34,13 @@ func (cs *chatumServer) Communicate(srv chatum.Chatum_CommunicateServer) error {
 	defer pinger.Stop()
 	ponger := make(chan bool, 1)
 	defer close(ponger)
+	closer := make(chan bool, 1)
+	defer close(closer)
 	wg.Go(func() error {
 		for {
 			select {
 			case <-ctx.Done():
+				closer <- true
 				return ctx.Err()
 			default:
 			}
@@ -61,7 +65,13 @@ func (cs *chatumServer) Communicate(srv chatum.Chatum_CommunicateServer) error {
 	})
 	wg.Go(func() error {
 		for {
-			<-pinger.C
+			select {
+			case <-closer:
+				return nil
+			case <-pinger.C:
+			}
+			
+			fmt.Println("exit")
 			srv.Send(&chatum.ServerSideEvent{
 				Type: chatum.EventType_PING,
 			})
