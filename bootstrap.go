@@ -9,10 +9,6 @@ import (
 	"net"
 )
 
-func NewListener(port ServerPort) (net.Listener, error) {
-	return net.Listen("tcp", string(port))
-}
-
 type GRPCParams struct {
 	fx.In
 	Server       *grpc.Server
@@ -20,7 +16,7 @@ type GRPCParams struct {
 	ChatumServer chatum.ChatumServer
 }
 
-func Register(lc fx.Lifecycle, p GRPCParams) {
+func Bootstrap(lc fx.Lifecycle, p GRPCParams) {
 	chatum.RegisterChatumServer(p.Server, p.ChatumServer)
 	reflection.Register(p.Server)
 	lc.Append(fx.Hook{

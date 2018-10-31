@@ -9,4 +9,5 @@ import (
 var (
 	PortEnvErr         = errors.New("$PORT is not set")
 	UsernameMissingErr = status.Error(codes.Unauthenticated, "username is missing")
+	PingPongTimeoutErr = errors.New("health check failed")
 )

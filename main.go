@@ -14,6 +14,6 @@ func main() {
 		fx.Provide(NewListener),
 		fx.Provide(grpc.NewServer),
 		fx.Provide(NewBus),
-		fx.Invoke(Register),
+		fx.Invoke(Bootstrap),
 	).Run()
 }

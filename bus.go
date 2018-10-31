@@ -9,7 +9,7 @@ import (
 type (
 	Bus interface {
 		BroadcastExceptUUID(uuid.UUID, *chatum.ServerSideEvent)
-		BroadcastExceptUsername(string, *chatum.ServerSideEvent)
+		BroadcastExceptUsername(username, message string)
 		Add(string, uuid.UUID, chatum.Chatum_CommunicateServer)
 		Remove(string, uuid.UUID)
 	}
@@ -20,11 +20,6 @@ type (
 	}
 )
 
-type Client struct {
-	Srv      chatum.Chatum_CommunicateServer
-	Username string
-}
-
 func NewBus() Bus {
 	return &bus{
 		numberOfClientsByUsername: make(map[string]int),
@@ -32,21 +27,21 @@ func NewBus() Bus {
 	}
 }
 
-func (b *bus) BroadcastExceptUsername(username string, msg *chatum.ServerSideEvent) {
-	for _, v := range b.clientsById {
-		if v.Username == username {
+func (b *bus) BroadcastExceptUsername(username, message string) {
+	for _, client := range b.clientsById {
+		if client.Username == username {
 			continue
 		}
-		v.Srv.Send(msg)
+		client.Send(NewMessage(username, message))
 	}
 }
 
 func (b *bus) BroadcastExceptUUID(uid uuid.UUID, msg *chatum.ServerSideEvent) {
-	for k, v := range b.clientsById {
-		if k == uid {
+	for id, client := range b.clientsById {
+		if id == uid {
 			continue
 		}
-		v.Srv.Send(msg)
+		client.Send(msg)
 	}
 }
 
@@ -54,10 +49,7 @@ func (b *bus) Add(username string, uid uuid.UUID, srv chatum.Chatum_CommunicateS
 	b.Lock()
 	defer b.Unlock()
 	if b.numberOfClientsByUsername[username] == 0 {
-		b.BroadcastExceptUsername(username, &chatum.ServerSideEvent{
-			Username: username,
-			Message:  "I am online!",
-		})
+		b.BroadcastExceptUsername(username, "I am online!")
 	}
 	b.numberOfClientsByUsername[username] += 1
 	b.clientsById[uid] = Client{srv, username}
@@ -68,10 +60,7 @@ func (b *bus) Remove(username string, uid uuid.UUID) {
 	defer b.Unlock()
 	b.numberOfClientsByUsername[username] -= 1
 	if b.numberOfClientsByUsername[username] == 0 {
-		b.BroadcastExceptUsername(username, &chatum.ServerSideEvent{
-			Username: username,
-			Message:  "I am offline!",
-		})
+		b.BroadcastExceptUsername(username, "I am offline!")
 	}
 	delete(b.clientsById, uid)
 }

@@ -1,12 +1,8 @@
 package main
 
 import (
-	"context"
-	"errors"
 	"github.com/mikefaraponov/chatum"
 	"github.com/satori/go.uuid"
-	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc/metadata"
 	"io"
 	"time"
 )
@@ -25,69 +21,57 @@ func (cs *chatumServer) Communicate(srv chatum.Chatum_CommunicateServer) error {
 	if err != nil {
 		return err
 	}
+
 	sid := uuid.NewV4()
+
 	cs.Add(username, sid, srv)
 	defer cs.Remove(username, sid)
-	var wg errgroup.Group
-	pinger := time.NewTicker(PingPongInterval)
-	defer pinger.Stop()
+
 	ponger := make(chan bool, 1)
 	defer close(ponger)
-	closer := make(chan bool, 1)
-	defer close(closer)
-	wg.Go(func() error {
-		for {
-			select {
-			case <-ctx.Done():
-				closer <- true
-				return ctx.Err()
-			default:
-			}
 
+	closer := make(chan error, 1)
+	defer close(closer)
+
+	go func() {
+		for {
 			msg, err := srv.Recv()
 			if err == io.EOF {
-				closer <- true
-				return nil
+				closer <- nil
+				return
 			}
 			if err != nil {
-				continue
+				closer <- err
+				return
 			}
 			switch msg.GetType() {
 			case chatum.EventType_DEFAULT:
-				go cs.BroadcastExceptUUID(sid, &chatum.ServerSideEvent{
-					Username: username,
-					Message:  msg.Message,
-				})
+				go cs.BroadcastExceptUUID(sid, NewMessage(username, msg.GetMessage()))
 			case chatum.EventType_PONG:
 				ponger <- true
+			default:
 			}
 		}
-	})
-	wg.Go(func() error {
-		for {
-			select {
-			case <-closer:
-				return nil
-			case <-pinger.C:
-			}
-			
-			srv.Send(&chatum.ServerSideEvent{
-				Type: chatum.EventType_PING,
-			})
-			select {
-			case <-time.After(PingPongTimeout):
-				return errors.New("health check failed")
-			case <-ponger:
-			}
-		}
-	})
-	return wg.Wait()
-}
+	}()
 
-func ExtractUsernameFromContext(ctx context.Context) (string, error) {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok || len(md[UsernameField]) == 0 {
-		return "", UsernameMissingErr
+	pinger := time.NewTicker(PingPongInterval)
+	defer pinger.Stop()
+
+	for {
+		select {
+		case err := <-closer:
+			return err
+		case <-pinger.C:
+		}
+
+		if err := srv.Send(NewPingMessage()); err != nil {
+			return err
+		}
+
+		select {
+		case <-time.After(PingPongTimeout):
+			return PingPongTimeoutErr
+		case <-ponger:
+		}
 	}
-	return md[UsernameField][0], nil
 }
