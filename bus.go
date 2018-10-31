@@ -4,7 +4,6 @@ import (
 	"github.com/mikefaraponov/chatum"
 	"github.com/satori/go.uuid"
 	"sync"
-	"fmt"
 )
 
 type (
@@ -52,7 +51,6 @@ func (b *bus) BroadcastExceptUUID(uid uuid.UUID, msg *chatum.ServerSideEvent) {
 }
 
 func (b *bus) Add(username string, uid uuid.UUID, srv chatum.Chatum_CommunicateServer) {
-	fmt.Println("add", username, uid)
 	b.Lock()
 	defer b.Unlock()
 	if b.numberOfClientsByUsername[username] == 0 {
@@ -66,7 +64,6 @@ func (b *bus) Add(username string, uid uuid.UUID, srv chatum.Chatum_CommunicateS
 }
 
 func (b *bus) Remove(username string, uid uuid.UUID) {
-	fmt.Println("remove", username, uid)
 	b.Lock()
 	defer b.Unlock()
 	b.numberOfClientsByUsername[username] -= 1
