@@ -10,7 +10,7 @@ import (
 const ExpectedValue = "1337"
 
 func TestNewServerPort(t *testing.T) {
-	t.Run("test when port env is set", func (t *testing.T) {
+	t.Run("test when port env is set", func(t *testing.T) {
 		os.Setenv("PORT", ExpectedValue)
 		defer os.Unsetenv("PORT")
 		var port ServerPort
@@ -23,11 +23,11 @@ func TestNewServerPort(t *testing.T) {
 		}
 		defer app.Stop(context.Background())
 
-		if string(port) != ":" + ExpectedValue {
+		if string(port) != ":"+ExpectedValue {
 			t.Fail()
 		}
 	})
-	t.Run("test when port env is not set", func (t *testing.T) {
+	t.Run("test when port env is not set", func(t *testing.T) {
 		os.Unsetenv("PORT")
 		var port ServerPort
 		app := fx.New(

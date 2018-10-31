@@ -12,7 +12,7 @@ import (
 )
 
 type chatumServer struct {
-	bus Bus
+	Bus
 }
 
 func NewChatumServer(bus Bus) chatum.ChatumServer {
@@ -26,8 +26,8 @@ func (cs *chatumServer) Communicate(srv chatum.Chatum_CommunicateServer) error {
 		return err
 	}
 	sid := uuid.NewV4()
-	cs.bus.Add(username, sid, srv)
-	defer cs.bus.Remove(username, sid)
+	cs.Add(username, sid, srv)
+	defer cs.Remove(username, sid)
 	var wg errgroup.Group
 	pinger := time.NewTicker(PingPongInterval)
 	defer pinger.Stop()
@@ -50,7 +50,7 @@ func (cs *chatumServer) Communicate(srv chatum.Chatum_CommunicateServer) error {
 			}
 			switch msg.GetType() {
 			case chatum.EventType_DEFAULT:
-				go cs.bus.BroadcastExceptUUID(sid, &chatum.ServerSideEvent{
+				go cs.BroadcastExceptUUID(sid, &chatum.ServerSideEvent{
 					Username: username,
 					Message:  msg.Message,
 				})
