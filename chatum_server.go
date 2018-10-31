@@ -47,6 +47,7 @@ func (cs *chatumServer) Communicate(srv chatum.Chatum_CommunicateServer) error {
 
 			msg, err := srv.Recv()
 			if err == io.EOF {
+				closer <- true
 				return nil
 			}
 			if err != nil {
