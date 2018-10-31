@@ -3,7 +3,6 @@
 package main
 
 import (
-	"github.com/go-redis/redis"
 	"go.uber.org/fx"
 	"google.golang.org/grpc"
 )
@@ -13,7 +12,6 @@ func main() {
 		NewServerPort(),
 		fx.Provide(NewChatumServer),
 		fx.Provide(NewListener),
-		fx.Provide(redis.NewClient),
 		fx.Provide(grpc.NewServer),
 		fx.Provide(NewBus),
 		fx.Invoke(Register),
