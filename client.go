@@ -4,6 +4,7 @@ import (
 	"github.com/mikefaraponov/chatum"
 	"io"
 	"time"
+	"github.com/satori/go.uuid"
 )
 
 type Client struct {
@@ -27,12 +28,16 @@ func (c *Client) Listen() {
 		}
 		switch msg.GetType() {
 		case chatum.EventType_DEFAULT:
-			go c.BroadcastExceptUUID(c.Id, NewMessage(c.Username, msg.GetMessage()))
+			go c.BroadcastExceptUUID(c.NewMessage(msg))
 		case chatum.EventType_PONG:
 			c.ponger <- true
 		default:
 		}
 	}
+}
+
+func (c *Client) NewMessage(msg *chatum.ClientSideEvent) (uuid.UUID, *chatum.ServerSideEvent) {
+	return c.Id, NewMessage(c.Username, msg.GetMessage())
 }
 
 func (c *Client) PingPong() error {
