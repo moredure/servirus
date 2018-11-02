@@ -14,8 +14,8 @@ func (cs *chatumServer) Communicate(srv chatum.Chatum_CommunicateServer) error {
 		return err
 	}
 	client := cs.Add(details)
-	go client.ListenEvents()
 	defer client.Close()
+	go client.ListenEvents()
 	return client.HealthCheck()
 }
 
