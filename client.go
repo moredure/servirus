@@ -43,9 +43,7 @@ func (c *Client) PingPong() error {
 		case <-c.pinger.C:
 		}
 
-		if err := c.Send(NewPingMessage()); err != nil {
-			return err
-		}
+		go c.Send(NewPingMessage())
 
 		select {
 		case <-time.After(PingPongTimeout):
