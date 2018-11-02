@@ -25,7 +25,7 @@ func (b *bus) BroadcastExceptUsername(username, message string) {
 		if client.Username == username {
 			continue
 		}
-		client.Send(NewMessage(username, message))
+		go client.Send(NewMessage(username, message))
 	}
 }
 
@@ -34,7 +34,7 @@ func (b *bus) BroadcastExceptUUID(uid uuid.UUID, msg *chatum.ServerSideEvent) {
 		if id == uid {
 			continue
 		}
-		client.Send(msg)
+		go client.Send(msg)
 	}
 }
 
@@ -45,7 +45,7 @@ func (b *bus) Add(d *ChatumClientDetails) *Client {
 	defer b.Unlock()
 
 	if b.numberOfClientsByUsername[client.Username] == 0 {
-		go b.BroadcastExceptUsername(client.Username, "I am online!")
+		b.BroadcastExceptUsername(client.Username, "I am online!")
 	}
 	b.numberOfClientsByUsername[client.Username] += 1
 	b.clientsById[client.Id] = client
@@ -59,7 +59,7 @@ func (b *bus) Remove(c *Client) {
 
 	b.numberOfClientsByUsername[c.Username] -= 1
 	if b.numberOfClientsByUsername[c.Username] == 0 {
-		go b.BroadcastExceptUsername(c.Username, "I am offline!")
+		b.BroadcastExceptUsername(c.Username, "I am offline!")
 	}
 	delete(b.clientsById, c.Id)
 }
