@@ -10,20 +10,20 @@ type (
 	Bus interface {
 		BroadcastExceptUUID(uuid.UUID, *chatum.ServerSideEvent)
 		BroadcastExceptUsername(username, message string)
-		Add(string, uuid.UUID, chatum.Chatum_CommunicateServer)
-		Remove(string, uuid.UUID)
+		Add(*ChatumClientDetails) *Client
+		Remove(*Client)
 	}
 	bus struct {
 		sync.Mutex
 		numberOfClientsByUsername map[string]int
-		clientsById               map[uuid.UUID]Client
+		clientsById               map[uuid.UUID]*Client
 	}
 )
 
 func NewBus() Bus {
 	return &bus{
 		numberOfClientsByUsername: make(map[string]int),
-		clientsById:               make(map[uuid.UUID]Client),
+		clientsById:               make(map[uuid.UUID]*Client),
 	}
 }
 
@@ -45,22 +45,24 @@ func (b *bus) BroadcastExceptUUID(uid uuid.UUID, msg *chatum.ServerSideEvent) {
 	}
 }
 
-func (b *bus) Add(username string, uid uuid.UUID, srv chatum.Chatum_CommunicateServer) {
+func (b *bus) Add(d *ChatumClientDetails) *Client {
 	b.Lock()
 	defer b.Unlock()
-	if b.numberOfClientsByUsername[username] == 0 {
-		b.BroadcastExceptUsername(username, "I am online!")
+	if b.numberOfClientsByUsername[d.Username] == 0 {
+		b.BroadcastExceptUsername(d.Username, "I am online!")
 	}
-	b.numberOfClientsByUsername[username] += 1
-	b.clientsById[uid] = Client{srv, username}
+	b.numberOfClientsByUsername[d.Username] += 1
+	client := NewClient(b, d)
+	b.clientsById[d.Id] = client
+	return client
 }
 
-func (b *bus) Remove(username string, uid uuid.UUID) {
+func (b *bus) Remove(c *Client) {
 	b.Lock()
 	defer b.Unlock()
-	b.numberOfClientsByUsername[username] -= 1
-	if b.numberOfClientsByUsername[username] == 0 {
-		b.BroadcastExceptUsername(username, "I am offline!")
+	b.numberOfClientsByUsername[c.Username] -= 1
+	if b.numberOfClientsByUsername[c.Username] == 0 {
+		b.BroadcastExceptUsername(c.Username, "I am offline!")
 	}
-	delete(b.clientsById, uid)
+	delete(b.clientsById, c.Id)
 }

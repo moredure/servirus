@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/mikefaraponov/chatum"
+	"github.com/satori/go.uuid"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -17,6 +18,25 @@ func NewPingMessage() *chatum.ServerSideEvent {
 	return &chatum.ServerSideEvent{
 		Type: chatum.EventType_PING,
 	}
+}
+
+type ChatumClientDetails struct {
+	chatum.Chatum_CommunicateServer
+	Username string
+	Id       uuid.UUID
+}
+
+func ExtractClientDetails(srv chatum.Chatum_CommunicateServer) (*ChatumClientDetails, error) {
+	ctx := srv.Context()
+	username, err := ExtractUsernameFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &ChatumClientDetails{
+		Chatum_CommunicateServer: srv,
+		Username:                 username,
+		Id:                       uuid.NewV4(),
+	}, nil
 }
 
 func ExtractUsernameFromContext(ctx context.Context) (string, error) {
