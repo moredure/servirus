@@ -4,11 +4,10 @@ import (
 	"github.com/mikefaraponov/chatum"
 	"io"
 	"time"
-	"github.com/satori/go.uuid"
 )
 
 type Client struct {
-	Bus
+	bus Bus
 	*ChatumClientDetails
 	ponger chan bool
 	closer chan error
@@ -28,16 +27,12 @@ func (c *Client) Listen() {
 		}
 		switch msg.GetType() {
 		case chatum.EventType_DEFAULT:
-			go c.BroadcastExceptUUID(c.NewMessage(msg))
+			go c.BroadcastExceptSelfUUID(msg.GetMessage())
 		case chatum.EventType_PONG:
 			c.ponger <- true
 		default:
 		}
 	}
-}
-
-func (c *Client) NewMessage(msg *chatum.ClientSideEvent) (uuid.UUID, *chatum.ServerSideEvent) {
-	return c.Id, NewMessage(c.Username, msg.GetMessage())
 }
 
 func (c *Client) PingPong() error {
@@ -60,17 +55,29 @@ func (c *Client) PingPong() error {
 	}
 }
 
+func (c *Client) BroadcastExceptSelfUsername(msg string) {
+	c.bus.BroadcastExceptUsername(c.newMessage(msg))
+}
+
+func (c *Client) BroadcastExceptSelfUUID(msg string) {
+	c.bus.BroadcastExceptUUID(c.Id, c.newMessage(msg))
+}
+
 func (c *Client) Close() {
 	close(c.ponger)
 	close(c.closer)
 	c.pinger.Stop()
-	c.Remove(c)
+	c.bus.Remove(c)
+}
+
+func (c *Client) newMessage(msg string) *chatum.ServerSideEvent {
+	return NewMessage(c.Username, msg)
 }
 
 func NewClient(b Bus, d *ChatumClientDetails) *Client {
 	return &Client{
-		Bus:                 b,
 		ChatumClientDetails: d,
+		bus:                 b,
 		pinger:              time.NewTicker(PingPongInterval),
 		ponger:              make(chan bool, 1),
 		closer:              make(chan error, 1),
