@@ -1,16 +1,17 @@
-package main
+package bus
 
 import (
 	"github.com/mikefaraponov/chatum"
 	"github.com/satori/go.uuid"
 	"sync"
+	"github.com/mikefaraponov/servirus/common"
 )
 
 type (
 	Bus interface {
 		BroadcastExceptUUID(uuid.UUID, *chatum.ServerSideEvent)
 		BroadcastExceptUsername(*chatum.ServerSideEvent)
-		Add(*ChatumClientDetails) *Client
+		Add(*common.ChatumClientDetails) *Client
 		Remove(*Client)
 	}
 	bus struct {
@@ -38,7 +39,7 @@ func (b *bus) BroadcastExceptUUID(uid uuid.UUID, msg *chatum.ServerSideEvent) {
 	}
 }
 
-func (b *bus) Add(d *ChatumClientDetails) *Client {
+func (b *bus) Add(d *common.ChatumClientDetails) *Client {
 	client := NewClient(b, d)
 
 	b.Lock()

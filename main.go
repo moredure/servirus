@@ -5,15 +5,18 @@ package main
 import (
 	"go.uber.org/fx"
 	"google.golang.org/grpc"
+	"github.com/mikefaraponov/servirus/common"
+	"github.com/mikefaraponov/servirus/server"
+	"github.com/mikefaraponov/servirus/bus"
 )
 
 func main() {
 	fx.New(
-		NewServerPort(),
-		fx.Provide(NewChatumServer),
-		fx.Provide(NewListener),
+		common.NewServerPort(),
+		fx.Provide(server.NewChatumServer),
+		fx.Provide(server.NewListener),
 		fx.Provide(grpc.NewServer),
-		fx.Provide(NewBus),
-		fx.Invoke(Bootstrap),
+		fx.Provide(bus.NewBus),
+		fx.Invoke(server.Bootstrap),
 	).Run()
 }

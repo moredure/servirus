@@ -1,14 +1,15 @@
-package main
+package bus
 
 import (
 	"github.com/mikefaraponov/chatum"
 	"io"
 	"time"
+	"github.com/mikefaraponov/servirus/common"
 )
 
 type Client struct {
 	bus Bus
-	*ChatumClientDetails
+	*common.ChatumClientDetails
 	ponger chan bool
 	closer chan error
 	pinger *time.Ticker
@@ -43,11 +44,11 @@ func (c *Client) PingPong() error {
 		case <-c.pinger.C:
 		}
 
-		go c.Send(NewPingMessage())
+		go c.Send(common.NewPingMessage())
 
 		select {
-		case <-time.After(PingPongTimeout):
-			return PingPongTimeoutErr
+		case <-time.After(common.PingPongTimeout):
+			return common.PingPongTimeoutErr
 		case <-c.ponger:
 		}
 	}
@@ -69,14 +70,14 @@ func (c *Client) Close() {
 }
 
 func (c *Client) newMessage(msg string) *chatum.ServerSideEvent {
-	return NewMessage(c.Username, msg)
+	return common.NewMessage(c.Username, msg)
 }
 
-func NewClient(b Bus, d *ChatumClientDetails) *Client {
+func NewClient(b Bus, d *common.ChatumClientDetails) *Client {
 	return &Client{
 		ChatumClientDetails: d,
 		bus:                 b,
-		pinger:              time.NewTicker(PingPongInterval),
+		pinger:              time.NewTicker(common.PingPongInterval),
 		ponger:              make(chan bool, 1),
 		closer:              make(chan error, 1),
 	}

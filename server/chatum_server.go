@@ -1,15 +1,17 @@
-package main
+package server
 
 import (
 	"github.com/mikefaraponov/chatum"
+	"github.com/mikefaraponov/servirus/bus"
+	"github.com/mikefaraponov/servirus/common"
 )
 
 type chatumServer struct {
-	Bus
+	bus.Bus
 }
 
 func (cs *chatumServer) Communicate(srv chatum.Chatum_CommunicateServer) error {
-	details, err := ExtractClientDetails(srv)
+	details, err := common.ExtractClientDetails(srv)
 	if err != nil {
 		return err
 	}
@@ -19,6 +21,6 @@ func (cs *chatumServer) Communicate(srv chatum.Chatum_CommunicateServer) error {
 	return client.PingPong()
 }
 
-func NewChatumServer(bus Bus) chatum.ChatumServer {
+func NewChatumServer(bus bus.Bus) chatum.ChatumServer {
 	return &chatumServer{bus}
 }
