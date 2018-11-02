@@ -14,7 +14,7 @@ type Client struct {
 	pinger *time.Ticker
 }
 
-func (c *Client) ListenEvents() {
+func (c *Client) Listen() {
 	for {
 		msg, err := c.Recv()
 		if err == io.EOF {
@@ -35,7 +35,7 @@ func (c *Client) ListenEvents() {
 	}
 }
 
-func (c *Client) HealthCheck() error {
+func (c *Client) PingPong() error {
 	for {
 		select {
 		case err := <-c.closer:

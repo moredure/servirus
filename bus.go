@@ -20,13 +20,6 @@ type (
 	}
 )
 
-func NewBus() Bus {
-	return &bus{
-		numberOfClientsByUsername: make(map[string]int),
-		clientsById:               make(map[uuid.UUID]*Client),
-	}
-}
-
 func (b *bus) BroadcastExceptUsername(username, message string) {
 	for _, client := range b.clientsById {
 		if client.Username == username {
@@ -46,23 +39,34 @@ func (b *bus) BroadcastExceptUUID(uid uuid.UUID, msg *chatum.ServerSideEvent) {
 }
 
 func (b *bus) Add(d *ChatumClientDetails) *Client {
+	client := NewClient(b, d)
+
 	b.Lock()
 	defer b.Unlock()
-	if b.numberOfClientsByUsername[d.Username] == 0 {
-		b.BroadcastExceptUsername(d.Username, "I am online!")
+
+	if b.numberOfClientsByUsername[client.Username] == 0 {
+		b.BroadcastExceptUsername(client.Username, "I am online!")
 	}
-	b.numberOfClientsByUsername[d.Username] += 1
-	client := NewClient(b, d)
-	b.clientsById[d.Id] = client
+	b.numberOfClientsByUsername[client.Username] += 1
+	b.clientsById[client.Id] = client
+
 	return client
 }
 
 func (b *bus) Remove(c *Client) {
 	b.Lock()
 	defer b.Unlock()
+
 	b.numberOfClientsByUsername[c.Username] -= 1
 	if b.numberOfClientsByUsername[c.Username] == 0 {
 		b.BroadcastExceptUsername(c.Username, "I am offline!")
 	}
 	delete(b.clientsById, c.Id)
+}
+
+func NewBus() Bus {
+	return &bus{
+		numberOfClientsByUsername: make(map[string]int),
+		clientsById:               make(map[uuid.UUID]*Client),
+	}
 }
