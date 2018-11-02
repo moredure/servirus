@@ -45,7 +45,7 @@ func (b *bus) Add(d *ChatumClientDetails) *Client {
 	defer b.Unlock()
 
 	if b.numberOfClientsByUsername[client.Username] == 0 {
-		b.BroadcastExceptUsername(client.Username, "I am online!")
+		go b.BroadcastExceptUsername(client.Username, "I am online!")
 	}
 	b.numberOfClientsByUsername[client.Username] += 1
 	b.clientsById[client.Id] = client
@@ -59,7 +59,7 @@ func (b *bus) Remove(c *Client) {
 
 	b.numberOfClientsByUsername[c.Username] -= 1
 	if b.numberOfClientsByUsername[c.Username] == 0 {
-		b.BroadcastExceptUsername(c.Username, "I am offline!")
+		go b.BroadcastExceptUsername(c.Username, "I am offline!")
 	}
 	delete(b.clientsById, c.Id)
 }
